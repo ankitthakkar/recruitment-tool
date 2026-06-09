@@ -1,9 +1,9 @@
 import click
 from tabulate import tabulate
 
-from src.services.recruitment_service import RecruitmentService
+from src.services import store
 
-svc = RecruitmentService()
+svc = store.load()
 
 
 @click.group()
@@ -25,6 +25,7 @@ def jobs():
 @click.option("--description", default="")
 def jobs_add(title, department, location, description):
     job = svc.add_job(title, department, location, description)
+    store.save(svc)
     click.echo(f"Created job #{job.id}: {job.title} ({job.department}) — {job.location}")
 
 
@@ -43,6 +44,7 @@ def jobs_list(show_all):
 @click.argument("job_id", type=int)
 def jobs_close(job_id):
     if svc.close_job(job_id):
+        store.save(svc)
         click.echo(f"Job #{job_id} closed.")
     else:
         click.echo(f"Job #{job_id} not found.", err=True)
@@ -64,6 +66,7 @@ def candidates_add(name, email, job_id):
     if not candidate:
         click.echo(f"Job #{job_id} not found.", err=True)
         return
+    store.save(svc)
     click.echo(f"Added candidate #{candidate.id}: {candidate.name} for job #{job_id}")
 
 
@@ -86,6 +89,7 @@ def candidates_advance(candidate_id):
     if new_stage is None:
         click.echo(f"Candidate #{candidate_id} not found.", err=True)
     else:
+        store.save(svc)
         click.echo(f"Candidate #{candidate_id} moved to: {new_stage}")
 
 
@@ -93,6 +97,7 @@ def candidates_advance(candidate_id):
 @click.argument("candidate_id", type=int)
 def candidates_reject(candidate_id):
     if svc.reject_candidate(candidate_id):
+        store.save(svc)
         click.echo(f"Candidate #{candidate_id} marked as Rejected.")
     else:
         click.echo(f"Candidate #{candidate_id} not found.", err=True)
@@ -105,6 +110,7 @@ def candidates_reject(candidate_id):
 def candidates_score(candidate_id, score, notes):
     try:
         if svc.score_candidate(candidate_id, score, notes):
+            store.save(svc)
             click.echo(f"Candidate #{candidate_id} scored {score}/10.")
         else:
             click.echo(f"Candidate #{candidate_id} not found.", err=True)
